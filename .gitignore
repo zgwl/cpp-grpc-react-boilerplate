@@ -1,9 +1,1 @@
-*.swp
-*.swo
-*.swn
-*.tmp
 .vscode/*
-bazel-bin
-bazel-out
-bazel-testlogs
-bazel-cpp-grpc-react-boilerplate
