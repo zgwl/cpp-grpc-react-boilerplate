@@ -33,7 +33,7 @@ class GreeterServiceImpl final : public Greeter::Service {
 
 void RunServer() {
   std::string address = "0.0.0.0";
-  std::string port = "50051";
+  std::string port = "9090";
   std::string server_address = address + ":" + port;
   GreeterServiceImpl service;
 
