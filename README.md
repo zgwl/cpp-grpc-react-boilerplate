@@ -32,4 +32,4 @@ Make sure the frontend dev app is running successfully.
 
 ## Proxy
 
-React frontend can't communicate with the GRPC backend service directly. It requires a proxy called [Envoy](https://github.com/envoyproxy/envoy) to connect the frontend with the backend.
+React frontend can't communicate with the GRPC backend server directly. Browsers have to connect to gRPC services via a special proxy called [Envoy](https://github.com/envoyproxy/envoy).
