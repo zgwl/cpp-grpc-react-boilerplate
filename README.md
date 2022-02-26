@@ -58,3 +58,7 @@ Make sure the Docker image is running successfully.
 
 Following the [instruction](https://github.com/grpc/grpc-web#code-generator-plugin) to download and install `protoc-gen-grpc-web` and `protoc`.
 
+Make sure the `protoc` can compile the proto to the right Javascript code by running the following command from the **backend** directory:
+```
+protoc -I=. protos/helloworld.proto --js_out=import_style=commonjs,binary:../frontend --grpc-web_out=import_style=commonjs,mode=grpcwebtext:../frontend
+```
