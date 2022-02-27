@@ -79,6 +79,8 @@ E.g. running the following command will call the `helloworld.Greeter` endpoint a
 grpcurl -d '{"name":"alex"}' -plaintext localhost:9090 helloworld.Greeter/SayHello
 ```
 
+An alternative tool is [grpcui](https://github.com/fullstorydev/grpcui). It's similar to `grpcurl`, but provides a much nicer and friendly UI.
+
 ### Frontend
 
 When the proto files get updated, it's required to re-generate the client Javascript files by running the `protoc` command above.
