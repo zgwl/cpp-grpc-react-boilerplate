@@ -62,3 +62,21 @@ Make sure the `protoc` can compile the proto to the right Javascript code by run
 ```
 protoc -I=. protos/helloworld.proto --js_out=import_style=commonjs,binary:../frontend --grpc-web_out=import_style=commonjs,mode=grpcwebtext:../frontend
 ```
+Even the **protos** are in the **backend** directory, it's actually being used in both backend and frontend. The above command generates the corresponding Javascript file from the **protos** and save then to the **frontend/protos** directory.
+
+2. Setup VS Code (Optional)
+
+### Backend
+
+Making changes in the backend is stright-foward. Editing the proto could update the service interface, and editing the cpp file could update the service business logic.
+
+Once all changes are finished, using the `bazel run` command to launch the service locally.
+
+To test the service manually, it's recommended to use the [grpcurl](https://github.com/fullstorydev/grpcurl). Follow the instruction to download the grpcurl, then interact with the local grpc server to verify it's working as expected.
+
+E.g. running the following command will call the `helloworld.Greeter` endpoint and the server shall return the correct response:
+```
+grpcurl -d '{"name":"alex"}' -plaintext localhost:9090 helloworld.Greeter/SayHello
+```
+
+### Frontend
