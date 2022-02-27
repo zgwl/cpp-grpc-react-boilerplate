@@ -80,3 +80,5 @@ grpcurl -d '{"name":"alex"}' -plaintext localhost:9090 helloworld.Greeter/SayHel
 ```
 
 ### Frontend
+
+When the proto files get updated, it's required to re-generate the client Javascript files by running the `protoc` command above.
