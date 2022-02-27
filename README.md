@@ -60,9 +60,9 @@ Following the [instruction](https://github.com/grpc/grpc-web#code-generator-plug
 
 Make sure the `protoc` can compile the proto to the right Javascript code by running the following command from the **backend** directory:
 ```
-protoc -I=. protos/helloworld.proto --js_out=import_style=commonjs,binary:../frontend --grpc-web_out=import_style=commonjs,mode=grpcwebtext:../frontend
+protoc -I=. protos/helloworld.proto --js_out=import_style=commonjs,binary:../frontend/src --grpc-web_out=import_style=commonjs,mode=grpcwebtext:../frontend/src
 ```
-Even the **protos** are in the **backend** directory, it's actually being used in both backend and frontend. The above command generates the corresponding Javascript file from the **protos** and save then to the **frontend/protos** directory.
+Even the **protos** are in the **backend** directory, it's actually being used in both backend and frontend. The above command generates the corresponding Javascript file from the **protos** and save then to the **frontend/src/protos** directory.
 
 2. Setup VS Code (Optional)
 
