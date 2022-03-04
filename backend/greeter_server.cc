@@ -8,57 +8,122 @@
 #include "protos/helloworld.grpc.pb.h"
 
 using grpc::Server;
+using grpc::ServerAsyncResponseWriter;
 using grpc::ServerBuilder;
+using grpc::ServerCompletionQueue;
 using grpc::ServerContext;
 using grpc::Status;
 using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
-std::unordered_map<std::string, int> count;
-
-// Logic and data behind the server's behavior.
-class GreeterServiceImpl final : public Greeter::Service {
-  Status SayHello(ServerContext* context, const HelloRequest* request,
-                  HelloReply* reply) override {
-    std::string prefix("Hello ");
-    const std::string& name = request->name();
-    if (count.find(name) == count.end()) {
-      reply->set_message(prefix + request->name());
-      count.insert({name, 1});
-    } else {
-      const int times = count.at(name);
-      reply->set_message(prefix + request->name() + ", " +
-                         std::to_string(times) + " times");
-      count[name]++;
-    }
-    return Status::OK;
+class ServerImpl final {
+ public:
+  ~ServerImpl() {
+    server_->Shutdown();
+    // Always shutdown the completion queue after the server.
+    cq_->Shutdown();
   }
+
+  void Run() {
+    const std::string address = "0.0.0.0";
+    const std::string port = "9090";
+    const std::string server_address = address + ":" + port;
+
+    ServerBuilder builder;
+    // Note: Listen on the given address without any authentication mechanism.
+    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.RegisterService(&service_);
+    cq_ = builder.AddCompletionQueue();
+    server_ = builder.BuildAndStart();
+    std::cout << "Server listening on " << server_address << std::endl;
+
+    handleRpc();
+  }
+
+ private:
+  void handleRpc() {
+    new CallData(&service_, cq_.get(), &dict_);
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+
+    while (true) {
+      GPR_ASSERT(cq_->Next(&tag, &ok));
+      GPR_ASSERT(ok);
+      static_cast<CallData*>(tag)->Proceed();
+    }
+  }
+
+  std::unique_ptr<ServerCompletionQueue> cq_;
+  Greeter::AsyncService service_;
+  std::unique_ptr<Server> server_;
+
+  // Internal private class so it's not exposed.
+ private:
+  std::unordered_map<std::string, int> dict_;
+
+  class CallData {
+   public:
+    CallData(Greeter::AsyncService* service, ServerCompletionQueue* cq,
+             std::unordered_map<std::string, int>* dict)
+        : dict_(dict),
+          service_(service),
+          cq_(cq),
+          responder_(&ctx_),
+          status_(CREATE) {
+      Proceed();
+    }
+
+    void Proceed() {
+      if (status_ == CREATE) {
+        status_ = PROCESS;
+        service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_,
+                                  this);
+      } else if (status_ == PROCESS) {
+        // Spawn a new CallData instance to serve new client.
+        new CallData(service_, cq_, dict_);
+
+        // Actual logic
+        std::string prefix("Hello ");
+        const auto& name = request_.name();
+        if (dict_->find(name) == dict_->end()) {
+          reply_.set_message(prefix + name);
+          dict_->insert({name, 1});
+        } else {
+          const auto times = dict_->at(name);
+          reply_.set_message(prefix + name + ", " + std::to_string(times) +
+                             " times");
+          (*dict_)[name]++;
+        }
+
+        status_ = FINISH;
+        responder_.Finish(reply_, Status::OK, this);
+      } else {
+        GPR_ASSERT(status_ == FINISH);
+        // Once in the FINISH state, deallocate ourselves (CallData).
+        delete this;
+      }
+    }
+
+   private:
+    std::unordered_map<std::string, int>* dict_;
+
+    Greeter::AsyncService* service_;
+    ServerCompletionQueue* cq_;
+    ServerContext ctx_;
+
+    HelloRequest request_;
+    HelloReply reply_;
+    ServerAsyncResponseWriter<HelloReply> responder_;
+
+    enum CallStatus { CREATE, PROCESS, FINISH };
+    CallStatus status_;
+  };
 };
 
-void RunServer() {
-  std::string address = "0.0.0.0";
-  std::string port = "9090";
-  std::string server_address = address + ":" + port;
-  GreeterServiceImpl service;
-
-  ServerBuilder builder;
-  // Listen on the given address without any authentication mechanism.
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  // Register "service" as the instance through which we'll communicate with
-  // clients. In this case it corresponds to an *synchronous* service.
-  builder.RegisterService(&service);
-  // Finally assemble the server.
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
-
-  // Wait for the server to shutdown. Note that some other thread must be
-  // responsible for shutting down the server for this call to ever return.
-  server->Wait();
-}
-
 int main(int argc, char** argv) {
-  RunServer();
+  ServerImpl server;
+  server.Run();
 
   return 0;
 }
