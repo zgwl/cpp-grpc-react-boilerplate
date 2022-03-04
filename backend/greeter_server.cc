@@ -17,6 +17,63 @@ using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
+class GreeterCallData {
+ public:
+  GreeterCallData(Greeter::AsyncService* service, ServerCompletionQueue* cq,
+                  std::unordered_map<std::string, int>* dict)
+      : dict_(dict),
+        service_(service),
+        cq_(cq),
+        responder_(&ctx_),
+        status_(CREATE) {
+    Proceed();
+  }
+
+  void Proceed() {
+    if (status_ == CREATE) {
+      status_ = PROCESS;
+      service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, this);
+    } else if (status_ == PROCESS) {
+      // Spawn a new GreeterCallData instance to serve new client.
+      new GreeterCallData(service_, cq_, dict_);
+
+      // Actual logic
+      std::string prefix("Hello ");
+      const auto& name = request_.name();
+      if (dict_->find(name) == dict_->end()) {
+        reply_.set_message(prefix + name);
+        dict_->insert({name, 1});
+      } else {
+        const auto times = dict_->at(name);
+        reply_.set_message(prefix + name + ", " + std::to_string(times) +
+                           " times");
+        (*dict_)[name]++;
+      }
+
+      status_ = FINISH;
+      responder_.Finish(reply_, Status::OK, this);
+    } else {
+      GPR_ASSERT(status_ == FINISH);
+      // Once in the FINISH state, deallocate ourselves (GreeterCallData).
+      delete this;
+    }
+  }
+
+ private:
+  std::unordered_map<std::string, int>* dict_;
+
+  Greeter::AsyncService* service_;
+  ServerCompletionQueue* cq_;
+  ServerContext ctx_;
+
+  HelloRequest request_;
+  HelloReply reply_;
+  ServerAsyncResponseWriter<HelloReply> responder_;
+
+  enum CallStatus { CREATE, PROCESS, FINISH };
+  CallStatus status_;
+};
+
 class ServerImpl final {
  public:
   ~ServerImpl() {
@@ -43,14 +100,14 @@ class ServerImpl final {
 
  private:
   void handleRpc() {
-    new CallData(&service_, cq_.get(), &dict_);
+    new GreeterCallData(&service_, cq_.get(), &dict_);
     void* tag;  // uniquely identifies a request.
     bool ok;
 
     while (true) {
       GPR_ASSERT(cq_->Next(&tag, &ok));
       GPR_ASSERT(ok);
-      static_cast<CallData*>(tag)->Proceed();
+      static_cast<GreeterCallData*>(tag)->Proceed();
     }
   }
 
@@ -58,67 +115,7 @@ class ServerImpl final {
   Greeter::AsyncService service_;
   std::unique_ptr<Server> server_;
 
-  // Internal private class so it's not exposed.
- private:
   std::unordered_map<std::string, int> dict_;
-
-  class CallData {
-   public:
-    CallData(Greeter::AsyncService* service, ServerCompletionQueue* cq,
-             std::unordered_map<std::string, int>* dict)
-        : dict_(dict),
-          service_(service),
-          cq_(cq),
-          responder_(&ctx_),
-          status_(CREATE) {
-      Proceed();
-    }
-
-    void Proceed() {
-      if (status_ == CREATE) {
-        status_ = PROCESS;
-        service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_,
-                                  this);
-      } else if (status_ == PROCESS) {
-        // Spawn a new CallData instance to serve new client.
-        new CallData(service_, cq_, dict_);
-
-        // Actual logic
-        std::string prefix("Hello ");
-        const auto& name = request_.name();
-        if (dict_->find(name) == dict_->end()) {
-          reply_.set_message(prefix + name);
-          dict_->insert({name, 1});
-        } else {
-          const auto times = dict_->at(name);
-          reply_.set_message(prefix + name + ", " + std::to_string(times) +
-                             " times");
-          (*dict_)[name]++;
-        }
-
-        status_ = FINISH;
-        responder_.Finish(reply_, Status::OK, this);
-      } else {
-        GPR_ASSERT(status_ == FINISH);
-        // Once in the FINISH state, deallocate ourselves (CallData).
-        delete this;
-      }
-    }
-
-   private:
-    std::unordered_map<std::string, int>* dict_;
-
-    Greeter::AsyncService* service_;
-    ServerCompletionQueue* cq_;
-    ServerContext ctx_;
-
-    HelloRequest request_;
-    HelloReply reply_;
-    ServerAsyncResponseWriter<HelloReply> responder_;
-
-    enum CallStatus { CREATE, PROCESS, FINISH };
-    CallStatus status_;
-  };
 };
 
 int main(int argc, char** argv) {
