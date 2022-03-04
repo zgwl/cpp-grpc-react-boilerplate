@@ -1,5 +1,9 @@
+#ifndef SRC_GREETER_BASE_CALL_DATA
+#define SRC_GREETER_BASE_CALL_DATA
+
 #include <grpcpp/grpcpp.h>
 
+#include "base_call_data.h"
 #include "protos/helloworld.grpc.pb.h"
 
 using grpc::ServerAsyncResponseWriter;
@@ -8,25 +12,13 @@ using grpc::ServerContext;
 using grpc::Status;
 using helloworld::Greeter;
 
-class BaseCallData {
- public:
-  BaseCallData() {}
-  virtual ~BaseCallData(){};
-  virtual void Proceed() = 0;
-
- protected:
-  virtual void WaitForRequest() = 0;
-  virtual void AddNextToCompletionQueue() = 0;
-  virtual void HandleRequest() = 0;
-};
-
 template <class RequestType, class ReplyType>
 class GreeterCallDataT : public BaseCallData {
  public:
   GreeterCallDataT(Greeter::AsyncService* service, ServerCompletionQueue* cq)
       : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE){};
 
-  virtual ~GreeterCallDataT(){};
+  virtual ~GreeterCallDataT() = default;
 
   virtual void Proceed() override {
     if (status_ == CREATE) {
@@ -56,3 +48,5 @@ class GreeterCallDataT : public BaseCallData {
   enum CallStatus { CREATE, PROCESS, FINISH };
   CallStatus status_;
 };
+
+#endif

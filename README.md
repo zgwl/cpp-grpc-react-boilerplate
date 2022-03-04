@@ -77,6 +77,8 @@ Even the **protos** are in the **backend** directory, it's actually being used i
 
 2. Setup VS Code (Optional)
 
+Install [buildifier](https://github.com/bazelbuild/buildtools/releases) to auto format the BUILD files in VS Code.
+
 ### Backend
 
 Making changes in the backend is stright-foward. Editing the proto could update the service interface, and editing the cpp file could update the service business logic.

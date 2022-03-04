@@ -1,2 +1,2 @@
 #!/bin/bash 
-bazel run //src:greeter_server
+bazel run //src:server

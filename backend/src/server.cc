@@ -5,55 +5,13 @@
 #include <string>
 #include <unordered_map>
 
-#include "greeter_call_data.h"
+#include "greeter_say_hello_call_data.h"
 #include "protos/helloworld.grpc.pb.h"
 
 using grpc::Server;
-using grpc::ServerAsyncResponseWriter;
 using grpc::ServerBuilder;
 using grpc::ServerCompletionQueue;
-using grpc::ServerContext;
-using grpc::Status;
 using helloworld::Greeter;
-using helloworld::HelloReply;
-using helloworld::HelloRequest;
-
-class GreeterCallDataSayHello
-    : public GreeterCallDataT<HelloRequest, HelloReply> {
- public:
-  GreeterCallDataSayHello(Greeter::AsyncService* service,
-                          ServerCompletionQueue* cq,
-                          std::unordered_map<std::string, int>* dict)
-      : GreeterCallDataT(service, cq), dict_(dict) {
-    Proceed();
-  };
-
-  virtual void WaitForRequest() override {
-    service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, this);
-  };
-
-  virtual void AddNextToCompletionQueue() override {
-    // Spawn a new GreeterCallDataSayHello instance to serve new client.
-    new GreeterCallDataSayHello(service_, cq_, dict_);
-  };
-
-  virtual void HandleRequest() override {
-    std::string prefix("Hello ");
-    const auto& name = request_.name();
-    if (dict_->find(name) == dict_->end()) {
-      reply_.set_message(prefix + name);
-      dict_->insert({name, 1});
-    } else {
-      const auto times = dict_->at(name);
-      reply_.set_message(prefix + name + ", " + std::to_string(times) +
-                         " times");
-      (*dict_)[name]++;
-    }
-  };
-
- private:
-  std::unordered_map<std::string, int>* dict_;
-};
 
 class ServerImpl final {
  public:
