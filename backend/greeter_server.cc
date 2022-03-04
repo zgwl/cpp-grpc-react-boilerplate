@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "greeter_call_data.h"
 #include "protos/helloworld.grpc.pb.h"
 
 using grpc::Server;
@@ -17,61 +18,41 @@ using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
-class GreeterCallData {
+class GreeterCallDataSayHello
+    : public GreeterCallDataT<HelloRequest, HelloReply> {
  public:
-  GreeterCallData(Greeter::AsyncService* service, ServerCompletionQueue* cq,
-                  std::unordered_map<std::string, int>* dict)
-      : dict_(dict),
-        service_(service),
-        cq_(cq),
-        responder_(&ctx_),
-        status_(CREATE) {
+  GreeterCallDataSayHello(Greeter::AsyncService* service,
+                          ServerCompletionQueue* cq,
+                          std::unordered_map<std::string, int>* dict)
+      : GreeterCallDataT(service, cq), dict_(dict) {
     Proceed();
-  }
+  };
 
-  void Proceed() {
-    if (status_ == CREATE) {
-      status_ = PROCESS;
-      service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, this);
-    } else if (status_ == PROCESS) {
-      // Spawn a new GreeterCallData instance to serve new client.
-      new GreeterCallData(service_, cq_, dict_);
+  virtual void WaitForRequest() override {
+    service_->RequestSayHello(&ctx_, &request_, &responder_, cq_, cq_, this);
+  };
 
-      // Actual logic
-      std::string prefix("Hello ");
-      const auto& name = request_.name();
-      if (dict_->find(name) == dict_->end()) {
-        reply_.set_message(prefix + name);
-        dict_->insert({name, 1});
-      } else {
-        const auto times = dict_->at(name);
-        reply_.set_message(prefix + name + ", " + std::to_string(times) +
-                           " times");
-        (*dict_)[name]++;
-      }
+  virtual void AddNextToCompletionQueue() override {
+    // Spawn a new GreeterCallDataSayHello instance to serve new client.
+    new GreeterCallDataSayHello(service_, cq_, dict_);
+  };
 
-      status_ = FINISH;
-      responder_.Finish(reply_, Status::OK, this);
+  virtual void HandleRequest() override {
+    std::string prefix("Hello ");
+    const auto& name = request_.name();
+    if (dict_->find(name) == dict_->end()) {
+      reply_.set_message(prefix + name);
+      dict_->insert({name, 1});
     } else {
-      GPR_ASSERT(status_ == FINISH);
-      // Once in the FINISH state, deallocate ourselves (GreeterCallData).
-      delete this;
+      const auto times = dict_->at(name);
+      reply_.set_message(prefix + name + ", " + std::to_string(times) +
+                         " times");
+      (*dict_)[name]++;
     }
-  }
+  };
 
  private:
   std::unordered_map<std::string, int>* dict_;
-
-  Greeter::AsyncService* service_;
-  ServerCompletionQueue* cq_;
-  ServerContext ctx_;
-
-  HelloRequest request_;
-  HelloReply reply_;
-  ServerAsyncResponseWriter<HelloReply> responder_;
-
-  enum CallStatus { CREATE, PROCESS, FINISH };
-  CallStatus status_;
 };
 
 class ServerImpl final {
@@ -100,14 +81,14 @@ class ServerImpl final {
 
  private:
   void handleRpc() {
-    new GreeterCallData(&service_, cq_.get(), &dict_);
+    new GreeterCallDataSayHello(&service_, cq_.get(), &dict_);
     void* tag;  // uniquely identifies a request.
     bool ok;
 
     while (true) {
       GPR_ASSERT(cq_->Next(&tag, &ok));
       GPR_ASSERT(ok);
-      static_cast<GreeterCallData*>(tag)->Proceed();
+      static_cast<BaseCallData*>(tag)->Proceed();
     }
   }
 
