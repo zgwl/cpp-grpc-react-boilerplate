@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "protos/helloworld.grpc.pb.h"
 
@@ -14,19 +15,23 @@ using helloworld::Greeter;
 using helloworld::HelloReply;
 using helloworld::HelloRequest;
 
+std::unordered_map<std::string, int> count;
+
 // Logic and data behind the server's behavior.
 class GreeterServiceImpl final : public Greeter::Service {
   Status SayHello(ServerContext* context, const HelloRequest* request,
                   HelloReply* reply) override {
     std::string prefix("Hello ");
-    reply->set_message(prefix + request->name());
-    return Status::OK;
-  }
-
-  Status SayHelloAgain(ServerContext* context, const HelloRequest* request,
-                       HelloReply* reply) override {
-    std::string prefix("Hello again ");
-    reply->set_message(prefix + request->name());
+    const std::string& name = request->name();
+    if (count.find(name) == count.end()) {
+      reply->set_message(prefix + request->name());
+      count.insert({name, 1});
+    } else {
+      const int times = count.at(name);
+      reply->set_message(prefix + request->name() + ", " +
+                         std::to_string(times) + " times");
+      count[name]++;
+    }
     return Status::OK;
   }
 };
