@@ -1,4 +1,8 @@
-Boilerplate for building applications with a React frontend and a C++ gRPC backend.
+Boilerplate Tech Stacks:
+
+- GRPC backend service implemented in C++
+- Next.js & React frontend with Typescript
+- Grpc-web proxy to connect the backend with the frontend
 
 ## How To Run
 
@@ -30,7 +34,7 @@ Run the following commands from the **frontend** directory to install all depend
 
 ```
 npm i
-npm run start
+npm run dev
 ```
 
 Make sure the frontend dev app is running successfully.
@@ -70,7 +74,7 @@ Following the [instruction](https://github.com/grpc/grpc-web#code-generator-plug
 Make sure the `protoc` can compile the proto to the right Javascript code by running the following command from the **backend** directory:
 
 ```
-bash ./scripts/regenerate_proto_js
+bash ./scripts/regenerate_proto_ts
 ```
 
 Even the **protos** are in the **backend** directory, it's actually being used in both backend and frontend. The above command generates the corresponding Javascript file from the **protos** and save then to the **frontend/src/protos** directory.
