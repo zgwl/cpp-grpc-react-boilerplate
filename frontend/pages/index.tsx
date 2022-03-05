@@ -2,10 +2,10 @@ import { useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
-import styles from "../styles/Home.module.css";
 
-import { GreeterClient } from "../protos/HelloworldServiceClientPb";
-import { HelloRequest } from "../protos/helloworld_pb";
+import styles from "styles/Home.module.css";
+import { GreeterClient } from "protos/HelloworldServiceClientPb";
+import { HelloRequest } from "protos/helloworld_pb";
 import { Empty } from "google-protobuf/google/protobuf/empty_pb";
 
 const client = new GreeterClient("http://localhost:8080", null, null);
