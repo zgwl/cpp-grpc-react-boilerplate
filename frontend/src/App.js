@@ -4,6 +4,7 @@ import logo from './logo.svg';
 import './App.css';
 import { GreeterClient } from './protos/helloworld_grpc_web_pb';
 import { HelloRequest } from './protos/helloworld_pb';
+import { Empty } from 'google-protobuf/google/protobuf/empty_pb';
 
 const client = new GreeterClient("http://localhost:8080", null, null);
 
@@ -21,6 +22,16 @@ function App() {
       setMessages(response.getMessage())
     })
   }
+
+  const clearHelloHistory = () => {
+    client.clearHelloHistory(new Empty(), null, (err, response) => {
+      if (err) {
+        console.log(err);
+      }
+      setMessages(null);
+    });
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -31,7 +42,11 @@ function App() {
               onChange={(e) => setName(e.target.value)} />
           </form>
         </div>
-        <button onClick={sayHelloFn}>Say Hello To Server</button>
+        <div>
+          <button onClick={sayHelloFn}>Say Hello To Server</button>
+          {" "}
+          <button onClick={clearHelloHistory}>Clear Hello History</button>
+        </div>
         <div>{messages}</div>
       </header>
     </div>

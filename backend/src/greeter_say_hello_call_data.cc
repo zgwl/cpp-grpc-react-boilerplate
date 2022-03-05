@@ -11,8 +11,7 @@ using helloworld::Greeter;
 GreeterCallDataSayHello::GreeterCallDataSayHello(
     Greeter::AsyncService* service, ServerCompletionQueue* cq,
     std::unordered_map<std::string, int>* dict)
-    : GreeterCallDataT(service, cq) {
-  dict_ = dict;
+    : GreeterCallDataT(service, cq), dict_(dict) {
   Proceed();
 }
 

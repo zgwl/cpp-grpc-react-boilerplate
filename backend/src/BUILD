@@ -5,11 +5,13 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "service_call_data",
     srcs = [
+        "greeter_clear_hello_history_call_data.cc",
         "greeter_say_hello_call_data.cc",
     ],
     hdrs = [
         "base_call_data.h",
         "greeter_base_call_data.h",
+        "greeter_clear_hello_history_call_data.h",
         "greeter_say_hello_call_data.h",
     ],
     deps = [

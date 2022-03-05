@@ -7,6 +7,9 @@ package(default_visibility = ["//visibility:public"])
 proto_library(
     name = "helloworld_proto",
     srcs = ["helloworld.proto"],
+    deps = [
+        "@com_google_protobuf//:empty_proto",
+    ],
 )
 
 cc_proto_library(

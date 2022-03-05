@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "greeter_clear_hello_history_call_data.h"
 #include "greeter_say_hello_call_data.h"
 #include "protos/helloworld.grpc.pb.h"
 
@@ -39,6 +40,7 @@ class ServerImpl final {
 
  private:
   void handleRpc() {
+    new GreeterCallDataClearHelloHistory(&service_, cq_.get(), &dict_);
     new GreeterCallDataSayHello(&service_, cq_.get(), &dict_);
     void* tag;  // uniquely identifies a request.
     bool ok;

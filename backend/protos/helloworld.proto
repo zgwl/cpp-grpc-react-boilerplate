@@ -2,8 +2,12 @@ syntax = "proto3";
 
 package helloworld;
 
+import "google/protobuf/empty.proto";
+
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply) {}
+
+  rpc ClearHelloHistory (google.protobuf.Empty) returns (google.protobuf.Empty) {}
 }
 
 message HelloRequest {
