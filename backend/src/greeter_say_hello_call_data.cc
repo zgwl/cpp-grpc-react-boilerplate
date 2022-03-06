@@ -31,8 +31,8 @@ void GreeterCallDataSayHello::HandleRequest() {
     reply_.set_message(prefix + name);
     dict_->insert({name, 1});
   } else {
-    const auto times = dict_->at(name);
-    reply_.set_message(prefix + name + ", " + std::to_string(times) + " times");
     (*dict_)[name]++;
+    reply_.set_message(prefix + name + ", " + std::to_string(dict_->at(name)) +
+                       " times");
   }
 }
